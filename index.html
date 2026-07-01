@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UANGKU - Keuangan Keluarga</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.4.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --hijau:#16a34a; --hijau-lt:#dcfce7;
+  --merah:#dc2626; --merah-lt:#fee2e2;
+  --biru:#1d4ed8;  --biru-lt:#dbeafe;
+  --ungu:#7c3aed;  --ungu-lt:#ede9fe;
+  --emas:#d97706;  --emas-lt:#fef3c7;
+  --bg:#f0f4f8; --card:#fff; --border:#e2e8f0;
+  --text:#1e293b; --text-2:#64748b; --text-3:#94a3b8;
+  --radius:14px; --radius-sm:8px;
+  --nav-h:64px; --sidebar:240px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* NAV */
+.topnav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);background:#0f172a;display:flex;align-items:center;padding:0 20px;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.nav-logo{display:flex;align-items:center;gap:8px;flex:1}
+.nav-logo .logo-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#16a34a,#059669);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff}
+.nav-logo .logo-text{font-size:20px;font-weight:700;color:#fff;letter-spacing:1px}
+.nav-logo .logo-sub{font-size:11px;color:#94a3b8}
+.nav-month select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+.nav-saldo{background:#1e293b;border-radius:10px;padding:6px 14px;text-align:right}
+.nav-saldo .lbl{font-size:10px;color:#94a3b8}
+.nav-saldo .val{font-size:15px;font-weight:700;color:#4ade80}
+.nav-user{display:flex;align-items:center;gap:8px}
+.nav-user img{width:32px;height:32px;border-radius:50%;border:2px solid #334155}
+.nav-user .uname{font-size:12px;color:#94a3b8;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-logout-top{background:#dc262622;color:#f87171;border:1px solid #dc262644;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+
+/* LAYOUT */
+.layout{display:flex;padding-top:var(--nav-h);min-height:100vh}
+.sidebar{width:var(--sidebar);background:#fff;border-right:1px solid var(--border);position:fixed;top:var(--nav-h);bottom:0;overflow-y:auto;padding:16px 0}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-2);transition:all .15s;border-left:3px solid transparent}
+.sidebar-item:hover{background:var(--bg);color:var(--text)}
+.sidebar-item.active{background:#f0fdf4;color:var(--hijau);border-left-color:var(--hijau);font-weight:600}
+.sidebar-item i{font-size:18px}
+.main{margin-left:var(--sidebar);flex:1;padding:24px;max-width:1000px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:20px;font-weight:700;margin-bottom:20px}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px 16px;display:flex;align-items:flex-start;gap:12px}
+.stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-lbl{font-size:12px;color:var(--text-2);margin-bottom:4px}
+.stat-val{font-size:20px;font-weight:700}
+.c-hijau{background:var(--hijau-lt);color:var(--hijau)}
+.c-merah{background:var(--merah-lt);color:var(--merah)}
+.c-biru{background:var(--biru-lt);color:var(--biru)}
+.c-ungu{background:var(--ungu-lt);color:var(--ungu)}
+.txt-hijau{color:var(--hijau)}.txt-merah{color:var(--merah)}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:#fff;transition:border .15s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--hijau);box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.jenis-toggle{display:flex;gap:8px;margin-bottom:14px}
+.jenis-btn{flex:1;padding:10px;border:2px solid var(--border);border-radius:var(--radius-sm);background:#fff;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.jenis-btn.active.masuk{border-color:var(--hijau);background:var(--hijau-lt);color:var(--hijau)}
+.jenis-btn.active.keluar{border-color:var(--merah);background:var(--merah-lt);color:var(--merah)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--hijau);color:#fff}.btn-primary:hover{background:#15803d}
+.btn-danger{background:var(--merah);color:#fff}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+
+/* TRANSAKSI */
+.trx-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.trx-item:last-child{border-bottom:none}
+.trx-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.trx-info{flex:1;min-width:0}
+.trx-kat{font-weight:600;font-size:14px}
+.trx-ket{font-size:12px;color:var(--text-2)}
+.trx-jml{font-weight:700;font-size:15px;text-align:right}
+.trx-tgl{font-size:11px;color:var(--text-3);text-align:right}
+.trx-del{cursor:pointer;color:var(--text-3);font-size:16px;padding:4px;border-radius:6px}
+.trx-del:hover{color:var(--merah);background:var(--merah-lt)}
+
+/* BUDGET */
+.budget-item{margin-bottom:14px}
+.budget-header{display:flex;justify-content:space-between;margin-bottom:5px}
+.budget-bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.budget-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f8fafc;font-weight:600;color:var(--text-2);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f8fafc}
+
+/* CHART */
+.chart-wrap{position:relative;height:280px}
+
+/* KAT */
+.kat-grid{display:flex;flex-wrap:wrap;gap:8px}
+.kat-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:13px;background:var(--bg);border:1px solid var(--border)}
+.kat-chip .dot{width:10px;height:10px;border-radius:50%}
+.kat-chip .del{margin-left:4px;color:var(--text-3);cursor:pointer}
+.kat-chip .del:hover{color:var(--merah)}
+
+/* SECTION TAB */
+.section-tab{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-2)}
+.stab.active{background:var(--hijau);color:#fff;border-color:var(--hijau)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between}
+.modal-title .close{cursor:pointer;color:var(--text-3)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:#1e293b;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success i{color:#4ade80}.toast.error i{color:#f87171}
+
+/* LOADER */
+.loader{text-align:center;padding:40px;color:var(--text-3)}
+.loader i{font-size:32px;display:block;margin-bottom:8px;animation:spin 1s linear infinite}
+.empty{text-align:center;padding:40px;color:var(--text-3)}
+.empty i{font-size:40px;display:block;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:16px;padding-bottom:80px}
+  .form-row{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .nav-saldo{display:none}
+  .bottom-nav{display:flex !important}
+}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:100;justify-content:space-around}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;font-size:10px;color:var(--text-2);cursor:pointer;gap:3px}
+.bottom-nav-item.active{color:var(--hijau)}
+.bottom-nav-item i{font-size:22px}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a 0%,#1e3a2f 100%);display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.4);text-align:center}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,#16a34a,#059669);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px}
+.login-title{font-size:26px;font-weight:800;color:#1e293b;letter-spacing:1px}
+.login-sub{font-size:13px;color:#64748b;margin-bottom:28px}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px;background:#fff;border:2px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;color:#1e293b;transition:all .2s}
+.google-btn:hover{border-color:#16a34a;background:#f0fdf4}
+.google-btn img{width:22px;height:22px}
+.login-note{font-size:11px;color:#94a3b8;margin-top:16px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">💰</div>
+    <div class="login-title">UANGKU</div>
+    <div class="login-sub">Keuangan Keluarga</div>
+    <button class="google-btn" onclick="loginGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Masuk dengan Google
+    </button>
+    <div class="login-note">Data Anda tersimpan aman di Google Sheets milik Anda</div>
+  </div>
+</div>
+
+<!-- TOP NAV -->
+<nav class="topnav" id="topnav" style="display:none">
+  <div class="nav-logo">
+    <div class="logo-icon"><i class="ti ti-wallet"></i></div>
+    <div><div class="logo-text">UANGKU</div><div class="logo-sub">Keuangan Keluarga</div></div>
+  </div>
+  <div class="nav-month">
+    <i class="ti ti-calendar" style="color:#94a3b8"></i>
+    <select id="bulanFilter" onchange="onBulanChange()"></select>
+  </div>
+  <div class="nav-saldo">
+    <div class="lbl">Saldo Total</div>
+    <div class="val" id="navSaldoVal">Rp 0</div>
+  </div>
+  <div class="nav-user">
+    <img id="userAvatar" src="" alt="">
+    <span class="uname" id="userName"></span>
+  </div>
+  <button class="btn-logout-top" onclick="logout()" title="Logout"><i class="ti ti-logout"></i></button>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar" style="display:none">
+  <div class="sidebar-item active" onclick="showPage('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+  <div class="sidebar-item" onclick="showPage('catat')"><i class="ti ti-plus-circle"></i> Catat Transaksi</div>
+  <div class="sidebar-item" onclick="showPage('riwayat')"><i class="ti ti-list"></i> Riwayat</div>
+  <div class="sidebar-item" onclick="showPage('laporan')"><i class="ti ti-chart-bar"></i> Laporan</div>
+  <div class="sidebar-item" onclick="showPage('budget')"><i class="ti ti-target"></i> Budget</div>
+  <div class="sidebar-item" onclick="showPage('kategori')"><i class="ti ti-tags"></i> Kategori</div>
+  <div class="sidebar-item" onclick="showPage('pengaturan')"><i class="ti ti-settings"></i> Pengaturan</div>
+</div>
+
+<!-- MAIN -->
+<div class="layout" id="app-layout" style="display:none">
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="page-title">Dashboard</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon c-hijau"><i class="ti ti-trending-up"></i></div><div><div class="stat-lbl">Pemasukan Bulan Ini</div><div class="stat-val txt-hijau" id="db-masuk">Rp 0</div></div></div>
+    <div class="stat-card"><div class="stat-icon c-merah"><i class="ti ti-trending-down"></i></div><div><div class="stat-lbl">Pengeluaran Bulan Ini</div><div class="stat-val txt-merah" id="db-keluar">Rp 0</div></div></div>
+    <div class="stat-card"><div class="stat-icon c-biru"><i class="ti ti-cash"></i></div><div><div class="stat-lbl">Net Bulan Ini</div><div class="stat-val" id="db-net">Rp 0</div></div></div>
+    <div class="stat-card"><div class="stat-icon c-ungu"><i class="ti ti-wallet"></i></div><div><div class="stat-lbl">Saldo Total</div><div class="stat-val" id="db-saldo">Rp 0</div></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card"><div class="card-title"><i class="ti ti-chart-donut"></i> Pengeluaran per Kategori</div><div class="chart-wrap"><canvas id="chartDonut"></canvas></div></div>
+    <div class="card"><div class="card-title"><i class="ti ti-list"></i> Transaksi Terbaru</div><div id="db-trx-list"><div class="loader"><i class="ti ti-loader"></i>Memuat...</div></div></div>
+  </div>
+</div>
+
+<!-- CATAT -->
+<div id="page-catat" class="page">
+  <div class="page-title">Catat Transaksi</div>
+  <div class="card" style="max-width:500px">
+    <div class="jenis-toggle">
+      <button class="jenis-btn masuk active" onclick="setJenis('pemasukan')"><i class="ti ti-trending-up"></i> Pemasukan</button>
+      <button class="jenis-btn keluar" onclick="setJenis('pengeluaran')"><i class="ti ti-trending-down"></i> Pengeluaran</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tanggal</label><input type="date" id="trx-tgl"></div>
+      <div class="form-group"><label>Jumlah (Rp)</label><input type="number" id="trx-jumlah" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-group"><label>Kategori</label><select id="trx-kat"></select></div>
+    <div class="form-group"><label>Keterangan</label><input type="text" id="trx-ket" placeholder="Keterangan singkat..."></div>
+    <button class="btn btn-primary btn-full" onclick="simpanTransaksi()"><i class="ti ti-device-floppy"></i> Simpan Transaksi</button>
+  </div>
+</div>
+
+<!-- RIWAYAT -->
+<div id="page-riwayat" class="page">
+  <div class="page-title">Riwayat Transaksi</div>
+  <div class="card">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="filter-jenis" onchange="loadRiwayat()" style="flex:1;min-width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
+        <option value="">Semua Jenis</option>
+        <option value="pemasukan">Pemasukan</option>
+        <option value="pengeluaran">Pengeluaran</option>
+      </select>
+      <button class="btn btn-outline" onclick="bukaSheets()"><i class="ti ti-table-export"></i> Buka di Sheets</button>
+    </div>
+    <div id="riwayat-list"><div class="loader"><i class="ti ti-loader"></i>Memuat...</div></div>
+  </div>
+</div>
+
+<!-- LAPORAN -->
+<div id="page-laporan" class="page">
+  <div class="page-title">Laporan Keuangan</div>
+  <div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i> Pemasukan vs Pengeluaran</div><div class="chart-wrap"><canvas id="chartBar"></canvas></div></div>
+  <div class="card"><div class="card-title"><i class="ti ti-table"></i> Ringkasan Bulanan</div>
+    <table class="tbl"><thead><tr><th>Bulan</th><th>Pemasukan</th><th>Pengeluaran</th><th>Net</th></tr></thead><tbody id="laporan-tbl"></tbody></table>
+  </div>
+</div>
+
+<!-- BUDGET -->
+<div id="page-budget" class="page">
+  <div class="page-title">Budget Bulanan</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-size:13px;color:var(--text-2)">Bulan: <strong id="budget-bln-lbl"></strong></span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('modal-budget')"><i class="ti ti-plus"></i> Atur Budget</button>
+  </div>
+  <div class="card"><div id="budget-list"><div class="loader"><i class="ti ti-loader"></i>Memuat...</div></div></div>
+</div>
+
+<!-- KATEGORI -->
+<div id="page-kategori" class="page">
+  <div class="page-title">Kelola Kategori</div>
+  <div class="section-tab">
+    <div class="stab active" onclick="filterKat('semua',this)">Semua</div>
+    <div class="stab" onclick="filterKat('pemasukan',this)">Pemasukan</div>
+    <div class="stab" onclick="filterKat('pengeluaran',this)">Pengeluaran</div>
+  </div>
+  <div class="card">
+    <div id="kat-list"></div>
+    <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+    <div class="card-title">Tambah Kategori Baru</div>
+    <div class="form-row">
+      <div class="form-group"><label>Nama</label><input type="text" id="kat-nama" placeholder="Nama kategori..."></div>
+      <div class="form-group"><label>Jenis</label><select id="kat-jenis"><option value="pengeluaran">Pengeluaran</option><option value="pemasukan">Pemasukan</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Warna</label><input type="color" id="kat-warna" value="#6366f1"></div>
+      <div class="form-group" style="align-self:flex-end"><button class="btn btn-primary" onclick="tambahKategori()"><i class="ti ti-plus"></i> Tambah</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- PENGATURAN -->
+<div id="page-pengaturan" class="page">
+  <div class="page-title">Pengaturan</div>
+  <div class="card" style="max-width:500px">
+    <div class="card-title"><i class="ti ti-user"></i> Profil</div>
+    <div class="form-group"><label>Nama Pengguna</label><input type="text" id="cfg-nama" placeholder="Nama keluarga..."></div>
+    <button class="btn btn-primary" onclick="simpanProfil()"><i class="ti ti-device-floppy"></i> Simpan</button>
+  </div>
+  <div class="card" style="max-width:500px">
+    <div class="card-title"><i class="ti ti-table"></i> Google Sheets</div>
+    <div class="form-group"><label>Spreadsheet ID</label><input type="text" id="cfg-sheet-id" placeholder="ID dari URL Sheets..." readonly style="background:#f8fafc;color:var(--text-2)"></div>
+    <div style="font-size:12px;color:var(--text-2);margin-top:6px"><i class="ti ti-info-circle"></i> ID diambil otomatis dari spreadsheet UANGKU di Google Drive Anda.</div>
+  </div>
+  <div class="card" style="max-width:500px">
+    <div class="card-title"><i class="ti ti-brand-whatsapp"></i> Notifikasi WhatsApp (Fonnte)</div>
+    <div class="form-group"><label>Nomor WA (628xx...)</label><input type="text" id="cfg-wa" placeholder="628123456789"></div>
+    <div class="form-group"><label>Token API Fonnte</label><input type="text" id="cfg-token" placeholder="Token dari fonnte.com..."></div>
+    <button class="btn btn-primary" onclick="simpanConfig()"><i class="ti ti-device-floppy"></i> Simpan</button>
+  </div>
+  <div class="card" style="max-width:500px">
+    <div class="card-title"><i class="ti ti-logout"></i> Sesi</div>
+    <button class="btn btn-danger" onclick="logout()"><i class="ti ti-logout"></i> Logout dari UANGKU</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <div class="bottom-nav-item active" onclick="showPage('dashboard')"><i class="ti ti-layout-dashboard"></i>Beranda</div>
+  <div class="bottom-nav-item" onclick="showPage('catat')"><i class="ti ti-plus-circle"></i>Catat</div>
+  <div class="bottom-nav-item" onclick="showPage('riwayat')"><i class="ti ti-list"></i>Riwayat</div>
+  <div class="bottom-nav-item" onclick="showPage('laporan')"><i class="ti ti-chart-bar"></i>Laporan</div>
+  <div class="bottom-nav-item" onclick="showPage('pengaturan')"><i class="ti ti-settings"></i>Setelan</div>
+</nav>
+
+<!-- MODAL BUDGET -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <div class="modal-title">Atur Budget <span class="close" onclick="closeModal('modal-budget')"><i class="ti ti-x"></i></span></div>
+    <div class="form-group"><label>Kategori</label><select id="bdg-kat"></select></div>
+    <div class="form-group"><label>Anggaran (Rp)</label><input type="number" id="bdg-jml" placeholder="0" min="0"></div>
+    <button class="btn btn-primary btn-full" onclick="simpanBudget()"><i class="ti ti-device-floppy"></i> Simpan</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<!-- Google API -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
