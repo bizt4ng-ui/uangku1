@@ -133,12 +133,19 @@ async function initSpreadsheet() {
     await pastikanSheetAda();
     return;
   }
+  console.log('Membuat spreadsheet baru...');
   showToast('Membuat spreadsheet UANGKU baru...', 'success');
-  spreadsheetId = await buatSpreadsheetBaru();
-  localStorage.setItem('uangku_sheet_id', spreadsheetId);
-  setCookie('uangku_sheet_id', spreadsheetId, 365);
-  document.getElementById('cfg-sheet-id').value = spreadsheetId;
-  showToast('Spreadsheet UANGKU berhasil dibuat!');
+  try {
+    spreadsheetId = await buatSpreadsheetBaru();
+    console.log('Spreadsheet ID:', spreadsheetId);
+    localStorage.setItem('uangku_sheet_id', spreadsheetId);
+    setCookie('uangku_sheet_id', spreadsheetId, 365);
+    document.getElementById('cfg-sheet-id').value = spreadsheetId;
+    showToast('Spreadsheet berhasil dibuat! ID: ' + spreadsheetId);
+  } catch(e) {
+    console.error('Gagal buat spreadsheet:', e);
+    showToast('Gagal: ' + (e.result ? e.result.error.message : e.message), 'error');
+  }
 }
 
 async function pastikanSheetAda() {
@@ -444,6 +451,16 @@ async function simpanTransaksi() {
 
 async function getTransaksi(bulan, jenis) {
   let rows = await sheetsGetAll(TAB.TRX);
+  // Normalisasi tanggal - bisa berupa string atau Date object
+  rows = rows.map(r => {
+    let tgl = r['Tanggal'];
+    if (tgl instanceof Date) {
+      tgl = tgl.getFullYear() + '-' + String(tgl.getMonth()+1).padStart(2,'0') + '-' + String(tgl.getDate()).padStart(2,'0');
+    } else {
+      tgl = String(tgl || '').substring(0, 10);
+    }
+    return { ...r, 'Tanggal': tgl };
+  });
   if (bulan) rows = rows.filter(r => r['Tanggal'].startsWith(bulan));
   if (jenis) rows = rows.filter(r => r['Jenis'] === jenis);
   return rows.reverse();
