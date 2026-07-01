@@ -22,18 +22,24 @@ let filterKatMode = 'semua';
 let chartDonut    = null;
 let chartBar      = null;
 
+// ── COOKIE HELPER ──
+function setCookie(name, val, days) {
+  const exp = new Date(Date.now() + days*864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(val) + ';expires=' + exp + ';path=/;SameSite=Lax';
+}
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function delCookie(name) {
+  document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+}
+
 // ── INIT ──
 window.onload = function() {
   const now = new Date();
   bulanAktif = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   initBulanFilter();
-
-  // Cek token tersimpan
-  const saved = localStorage.getItem('uangku_token');
-  if (saved) {
-    accessToken = saved;
-    masukAplikasi();
-  }
 
   // Load Google API
   gapi.load('client', async function() {
@@ -42,25 +48,40 @@ window.onload = function() {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
+      prompt: '',
       callback: async (resp) => {
         if (resp.error) { showToast('Login gagal: ' + resp.error, 'error'); return; }
         accessToken = resp.access_token;
-        localStorage.setItem('uangku_token', accessToken);
+        setCookie('uangku_token', accessToken, 1); // simpan 1 hari
         gapi.client.setToken({ access_token: accessToken });
         await masukAplikasi();
       }
     });
 
-    // Jika sudah ada token, set ke gapi
-    if (accessToken) {
-      gapi.client.setToken({ access_token: accessToken });
+    // Cek token dari cookie
+    const saved = getCookie('uangku_token');
+    if (saved) {
+      accessToken = saved;
+      gapi.client.setToken({ access_token: saved });
+      // Verifikasi token masih valid
+      try {
+        const test = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + saved);
+        const info = await test.json();
+        if (info.error) throw new Error('expired');
+        await masukAplikasi();
+      } catch(e) {
+        // Token expired, minta login ulang tanpa prompt
+        delCookie('uangku_token');
+        tokenClient.requestAccessToken({ prompt: '' });
+      }
     }
+    // Jika tidak ada token, tampilkan tombol login
   });
 };
 
 async function loginGoogle() {
   if (!tokenClient) { showToast('Google API belum siap, tunggu sebentar...', 'error'); return; }
-  tokenClient.requestAccessToken({ prompt: '' });
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 async function masukAplikasi() {
@@ -97,7 +118,8 @@ async function masukAplikasi() {
 
 function logout() {
   if (!confirm('Keluar dari UANGKU?')) return;
-  localStorage.removeItem('uangku_token');
+  delCookie('uangku_token');
+  delCookie('uangku_sheet_id');
   localStorage.removeItem('uangku_sheet_id');
   if (accessToken) google.accounts.oauth2.revoke(accessToken);
   location.reload();
@@ -106,7 +128,7 @@ function logout() {
 // ── SPREADSHEET INIT ──
 async function initSpreadsheet() {
   // Cek apakah sudah ada ID tersimpan
-  spreadsheetId = localStorage.getItem('uangku_sheet_id');
+  spreadsheetId = getCookie('uangku_sheet_id') || localStorage.getItem('uangku_sheet_id');
   if (spreadsheetId) {
     document.getElementById('cfg-sheet-id').value = spreadsheetId;
     return;
@@ -127,6 +149,7 @@ async function initSpreadsheet() {
   }
 
   localStorage.setItem('uangku_sheet_id', spreadsheetId);
+  setCookie('uangku_sheet_id', spreadsheetId, 365);
   document.getElementById('cfg-sheet-id').value = spreadsheetId;
 }
 
