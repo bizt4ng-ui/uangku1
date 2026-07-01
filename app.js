@@ -6,7 +6,7 @@
 const CLIENT_ID   = '641912236870-2aqj6qdrbflv0q6tb7dlpcotsak24i4j.apps.googleusercontent.com';
 const API_KEY     = 'AIzaSyAArFoRAWBrXppd887w2DkinIZnwo313Ik';
 const SCOPES      = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file profile email';
-const SHEET_TITLE = 'UANGKU Database';
+const SHEET_TITLE = 'UANGKU-GHP Database';
 
 // Nama sheet tab
 const TAB = { TRX: 'Transaksi', KAT: 'Kategori', BUDGET: 'Budget', CFG: 'Config' };
@@ -127,53 +127,47 @@ function logout() {
 
 // ── SPREADSHEET INIT ──
 async function initSpreadsheet() {
-  // Cek apakah sudah ada ID tersimpan
   spreadsheetId = getCookie('uangku_sheet_id') || localStorage.getItem('uangku_sheet_id');
   if (spreadsheetId) {
     document.getElementById('cfg-sheet-id').value = spreadsheetId;
+    await pastikanSheetAda();
     return;
   }
-
-  // Cari spreadsheet UANGKU di Drive
-  const search = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${SHEET_TITLE}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&fields=files(id,name)`,
-    { headers: { Authorization: 'Bearer ' + accessToken } }
-  );
-  const result = await search.json();
-
-  if (result.files && result.files.length > 0) {
-    spreadsheetId = result.files[0].id;
-  } else {
-    // Buat spreadsheet baru
-    spreadsheetId = await buatSpreadsheetBaru();
-  }
-
+  showToast('Membuat spreadsheet UANGKU baru...', 'success');
+  spreadsheetId = await buatSpreadsheetBaru();
   localStorage.setItem('uangku_sheet_id', spreadsheetId);
   setCookie('uangku_sheet_id', spreadsheetId, 365);
   document.getElementById('cfg-sheet-id').value = spreadsheetId;
+  showToast('Spreadsheet UANGKU berhasil dibuat!');
 }
 
-async function buatSpreadsheetBaru() {
-  const resp = await gapi.client.sheets.spreadsheets.create({
-    resource: {
-      properties: { title: SHEET_TITLE },
-      sheets: [
-        { properties: { title: TAB.TRX } },
-        { properties: { title: TAB.KAT } },
-        { properties: { title: TAB.BUDGET } },
-        { properties: { title: TAB.CFG } }
-      ]
+async function pastikanSheetAda() {
+  try {
+    const resp = await gapi.client.sheets.spreadsheets.get({ spreadsheetId });
+    const tabs  = resp.result.sheets.map(s => s.properties.title);
+    const butuh = [TAB.TRX, TAB.KAT, TAB.BUDGET, TAB.CFG];
+    const kurang = butuh.filter(t => !tabs.includes(t));
+    if (kurang.length > 0) {
+      const requests = kurang.map(t => ({ addSheet: { properties: { title: t } } }));
+      await gapi.client.sheets.spreadsheets.batchUpdate({ spreadsheetId, resource: { requests } });
+      await initHeaders();
+    } else {
+      // Cek apakah kategori sudah ada
+      const katRows = await sheetsRead(TAB.KAT + '!A:A');
+      if (katRows.length <= 1) await seedKategori();
     }
-  });
-  const id = resp.result.spreadsheetId;
+  } catch(e) { console.log('pastikanSheetAda error:', e); }
+}
 
-  // Header Transaksi
-  await sheetsWrite(TAB.TRX + '!A1:H1', [['ID','Tanggal','Jenis','Kategori','Keterangan','Jumlah','Saldo','Timestamp']]);
-  await sheetsWrite(TAB.KAT + '!A1:D1', [['Nama','Jenis','Warna','Icon']]);
+async function initHeaders() {
+  await sheetsWrite(TAB.TRX    + '!A1:H1', [['ID','Tanggal','Jenis','Kategori','Keterangan','Jumlah','Saldo','Timestamp']]);
+  await sheetsWrite(TAB.KAT    + '!A1:D1', [['Nama','Jenis','Warna','Icon']]);
   await sheetsWrite(TAB.BUDGET + '!A1:D1', [['Bulan','Kategori','Anggaran','Terpakai']]);
-  await sheetsWrite(TAB.CFG + '!A1:B1', [['Key','Value']]);
+  await sheetsWrite(TAB.CFG    + '!A1:B1', [['Key','Value']]);
+  await seedKategori();
+}
 
-  // Seed kategori default
+async function seedKategori() {
   const kats = [
     ['Gaji','pemasukan','#22c55e','ti-briefcase'],
     ['Bonus','pemasukan','#16a34a','ti-star'],
@@ -189,9 +183,24 @@ async function buatSpreadsheetBaru() {
     ['Tabungan','pengeluaran','#64748b','ti-piggy-bank'],
     ['Lain-lain Keluar','pengeluaran','#94a3b8','ti-dots-circle'],
   ];
-  spreadsheetId = id;
   await sheetsAppend(TAB.KAT, kats);
-  return id;
+}
+
+async function buatSpreadsheetBaru() {
+  const resp = await gapi.client.sheets.spreadsheets.create({
+    resource: {
+      properties: { title: SHEET_TITLE },
+      sheets: [
+        { properties: { title: TAB.TRX } },
+        { properties: { title: TAB.KAT } },
+        { properties: { title: TAB.BUDGET } },
+        { properties: { title: TAB.CFG } }
+      ]
+    }
+  });
+  spreadsheetId = resp.result.spreadsheetId;
+  await initHeaders();
+  return spreadsheetId;
 }
 
 // ── SHEETS API HELPERS ──
@@ -646,6 +655,16 @@ async function simpanConfig() {
 
 function bukaSheets() {
   window.open('https://docs.google.com/spreadsheets/d/' + spreadsheetId, '_blank');
+}
+
+async function resetSpreadsheet() {
+  if (!confirm('Reset spreadsheet? Ini akan membuat spreadsheet UANGKU baru (data lama tidak terhapus).')) return;
+  delCookie('uangku_sheet_id');
+  localStorage.removeItem('uangku_sheet_id');
+  spreadsheetId = null;
+  await initSpreadsheet();
+  await loadKategori();
+  showToast('Spreadsheet baru berhasil dibuat!');
 }
 
 // ── NOTIF WA (Fonnte) ──
